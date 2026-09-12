@@ -1,6 +1,7 @@
 import type { CapabilityProvenance, CapabilityRunStatus } from './capability.ts';
 import type { SupportedLocale } from './locale.ts';
 import type { DocumentEvidence, ResearchSourceType } from './research-document.ts';
+import type { StrategyId } from './strategy.ts';
 
 /**
  * Research domain — Deep Research runs, evidence-backed reports, and the
@@ -11,6 +12,8 @@ export type ResearchStance = 'bullish' | 'bearish' | 'neutral';
 
 export type ResearchRunStatus =
   | 'queued'
+  | 'interrupted'
+  | 'recovering'
   | 'fetching'
   | 'synthesizing'
   | 'completed'
@@ -104,6 +107,18 @@ export interface ResearchRunSummary {
   completedCapabilities: string[];
   failedCapabilities: string[];
   cancelled?: boolean;
+  strategyId?: StrategyId;
+  locale?: SupportedLocale;
+  recoveryCount?: number;
+  recoverable?: boolean;
+  error?: string;
+}
+
+/** Non-secret identity pinned at the start of a research workflow. */
+export interface ResearchExecutionIdentity {
+  provider: string;
+  model: string;
+  config: string;
 }
 
 /**
@@ -111,6 +126,12 @@ export interface ResearchRunSummary {
  * not prose) plus the per-capability run outcomes.
  */
 export interface ResearchSynthesisInput {
+  /** Links new synthesis spans to the original durable research run. */
+  recovery?: {
+    runId: string;
+    attempt: number;
+    onAgentRun: (runId: string, sessionId: string) => Promise<void>;
+  };
   symbol: string;
   plannedCapabilities: string[];
   runs: Array<{
